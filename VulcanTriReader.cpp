@@ -23,9 +23,6 @@ VulcanTriReader::VulcanTriReader(const std::string path) {
 
 
 void VulcanTriReader::readHeader(int& numVertex, int& numTriangles) {
-
-    //Read magic bytes to check
-
     //Read sizes
     seek(72);
     read(&numVertex, 4);
@@ -35,6 +32,10 @@ void VulcanTriReader::readHeader(int& numVertex, int& numTriangles) {
     numTriangles = be32toh(numTriangles);
 }
 
+
+        
+        
+
 bool VulcanTriReader::readVertexBuffer(double* buffer, size_t bufferSize) {
     int numVertex, numTriangles;
     readHeader(numVertex, numTriangles);
@@ -43,14 +44,30 @@ bool VulcanTriReader::readVertexBuffer(double* buffer, size_t bufferSize) {
     seek(72+24+24);
 
     size_t readLength = sizeof(double) * 3 * numVertex;
-    if(readLength > bufferSize) return false;
+    if(readLength != bufferSize) 
+        return false;
     
-    read(buffer, sizeof(double) * 3 * numVertex);
+    char tempBuffer[8];
+    char* targetBuffer = (char*)buffer;
+    for(size_t i=0;i<numVertex*3;i++) {
+        read(tempBuffer, 8);
+        //Flip buffer
+        targetBuffer[i*8+0] = tempBuffer[7];
+        targetBuffer[i*8+1] = tempBuffer[6];
+        targetBuffer[i*8+2] = tempBuffer[5];
+        targetBuffer[i*8+3] = tempBuffer[4];
+        targetBuffer[i*8+4] = tempBuffer[3];
+        targetBuffer[i*8+5] = tempBuffer[2];
+        targetBuffer[i*8+6] = tempBuffer[1];
+        targetBuffer[i*8+7] = tempBuffer[0];
 
-    //Fix endianness of buffer
-    for(size_t i=0;i<3 * numVertex;i++) {
-        buffer[i] = be64toh(buffer[i]);
     }
+    // read(buffer, sizeof(double) * 3 * numVertex);
+
+    // //Fix endianness of buffer
+    // for(size_t i=0;i<3 * numVertex;i++) {
+    //     buffer[i] = (buffer[i]);
+    // }
 
 
     return true;
@@ -66,10 +83,10 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t* buffer, size_t bufferSize) {
     //Vertices start at this offset
     seek(72+24+24+24*numVertex);
 
-    //Fix endianness of buffer
+    //Triangle index buffer is padded so that each triangle is 12 bytes of data followed by 12 bytes of padding
     char padding[12];
     for(size_t i=0;i<numTriangles;i++) {
-        read(buffer + (i*3), sizeof(uint32_t) * 3);
+        read(buffer + i*3, sizeof(uint32_t) * 3);
         read(padding, 12);
         for(size_t j=0;j<3;j++)
             buffer[i*3 + j] = be32toh(buffer[i*3 + j]);
@@ -98,6 +115,7 @@ void VulcanTriReader::seek(uint32_t offset) {
 
         //Decompress page into current page buffer
         mCurrentPageSize = fastlz_decompress(page->compressed_data().c_str(), page->compressed_data_size(), mCurrentPageData, sizeof(mCurrentPageData));
+        std::cout << " Page size " << mCurrentPageSize << " from " << mDataStruct->compression_block_size() << std::endl;
 
         mCurrentOffset = offset;
         mCurrentPageStart = pageIndex * mDataStruct->compression_block_size();

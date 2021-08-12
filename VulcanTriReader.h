@@ -3,7 +3,7 @@
 
 #include "vulcan_00t.h"
 
-const int VULCAN_PAGE_SIZE = 256*8;
+const int VULCAN_MAX_PAGE_SIZE = 256*1024;
 
 
 class VulcanTriReader {
@@ -28,6 +28,6 @@ class VulcanTriReader {
         uint32_t mCurrentPageEnd;
         uint32_t mCurrentPageIndex;
 
-        char mCurrentPageData[VULCAN_PAGE_SIZE];
+        char mCurrentPageData[VULCAN_MAX_PAGE_SIZE];
         int mCurrentPageSize;
 };
