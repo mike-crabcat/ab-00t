@@ -65,12 +65,14 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t* buffer, size_t bufferSize) {
     
     //Vertices start at this offset
     seek(72+24+24+24*numVertex);
-    
-    read(buffer, sizeof(uint32_t) * 3 * numTriangles);
 
     //Fix endianness of buffer
-    for(size_t i=0;i<3 * numTriangles;i++) {
-        buffer[i] = be32toh(buffer[i]);
+    char padding[12];
+    for(size_t i=0;i<numTriangles;i++) {
+        read(buffer + (i*3), sizeof(uint32_t) * 3);
+        read(padding, 12);
+        for(size_t j=0;j<3;j++)
+            buffer[i*3 + j] = be32toh(buffer[i*3 + j]);
     }
 
     return true;

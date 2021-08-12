@@ -16,14 +16,14 @@ int main() {
     double* vertices = new double[numVertex*3];
     reader.readVertexBuffer(vertices, sizeof(double)*numVertex*3);
 
-    for(int i=0;i<numVertex;i++) {
+    for(size_t i=0;i<numVertex;i++) {
         std::cout << vertices[i*3+0] << " " << vertices[i*3+1] << " " << vertices[i*3+2] << std::endl;
     }
 
     uint32_t* triangles = new uint32_t[numTriangles*3];
     reader.readTriangleBuffer(triangles, sizeof(uint32_t)*numTriangles*3);
 
-    for(int i=0;i<numTriangles;i++) {
+    for(size_t i=0;i<numTriangles;i++) {
         std::cout << triangles[i*3+0] << " " << triangles[i*3+1] << " " << triangles[i*3+2] << std::endl;
     }
 
