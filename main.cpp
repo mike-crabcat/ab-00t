@@ -6,7 +6,8 @@ int main() {
 
     std::cout << " hello world " << std::endl;
 
-    VulcanTriReader reader("/home/mike/Downloads/19183685.00t");
+    //VulcanTriReader reader("/home/mike/Downloads/19183685.00t");
+    VulcanTriReader reader("/home/mike/Downloads/FY20Q1_FOR.00t");
 
     int numVertex, numTriangles;
     reader.readHeader(numVertex, numTriangles);

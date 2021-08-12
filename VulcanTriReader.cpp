@@ -84,12 +84,18 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t* buffer, size_t bufferSize) {
     seek(72+24+24+24*numVertex);
 
     //Triangle index buffer is padded so that each triangle is 12 bytes of data followed by 12 bytes of padding
-    char padding[12];
+    uint32_t tempBuffer[6];
     for(size_t i=0;i<numTriangles;i++) {
-        read(buffer + i*3, sizeof(uint32_t) * 3);
-        read(padding, 12);
-        for(size_t j=0;j<3;j++)
-            buffer[i*3 + j] = be32toh(buffer[i*3 + j]);
+        read(tempBuffer, sizeof(uint32_t)*6);
+        buffer[i*3+0] = be32toh(tempBuffer[0]);
+        buffer[i*3+1] = be32toh(tempBuffer[1]);
+        buffer[i*3+2] = be32toh(tempBuffer[2]);
+
+        std::cout << buffer[i*3+0] << " " << buffer[i*3+1] << " " << buffer[i*3+2] << std::endl;
+
+        if(buffer[i*3+0] == 0) {
+            std::cout << "zeros!" << std::endl;
+        }
     }
 
     return true;
@@ -118,8 +124,8 @@ void VulcanTriReader::seek(uint32_t offset) {
         std::cout << " Page size " << mCurrentPageSize << " from " << mDataStruct->compression_block_size() << std::endl;
 
         mCurrentOffset = offset;
-        mCurrentPageStart = pageIndex * mDataStruct->compression_block_size();
-        mCurrentPageEnd = mCurrentPageStart + mDataStruct->compression_block_size();
+        mCurrentPageStart = page->page_start();
+        mCurrentPageEnd = page->page_end();
         mCurrentPageIndex = pageIndex;
     }
 }
