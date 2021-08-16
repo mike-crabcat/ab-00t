@@ -7,7 +7,11 @@ for n in ~/data/geotron-blocks-triangulations/*.00t; do
   ./build/tester "$n" >tmp-cpp
 
   sdiff tmp-py tmp-cpp
+
   if [[ ! $? -eq 0 ]]; then
+    echo "$n fails comparison"
     break
+  else
+    echo "$n gives identical results"
   fi
 done
