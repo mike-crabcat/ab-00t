@@ -126,8 +126,8 @@ void VulcanTriReader::seek(uint32_t offset) {
         page->compressed_data().c_str(), page->compressed_data_size(),
         mCurrentPageData, sizeof(mCurrentPageData));
 
-    std::cout << "Page size " << mCurrentPageSize << " from "
-              << mDataStruct->compression_block_size() << std::endl;
+    // std::cout << "Page size " << mCurrentPageSize << " from "
+    //           << mDataStruct->compression_block_size() << std::endl;
 
     mCurrentOffset = offset;
     mCurrentPageStart = page->page_start();

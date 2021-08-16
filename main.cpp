@@ -1,30 +1,34 @@
+#include <iomanip>
+#include <ios>
 #include <iostream>
 
 #include "VulcanTriReader.h"
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    std::cout << "usage: " << argv[0] << " filename" << std::endl;
+    std::cerr << "usage: " << argv[0] << " filename" << std::endl;
     return 1;
   }
 
   char *filename = argv[1];
 
-  std::cout << "opening " << filename << std::endl;
+  std::cerr << "opening " << filename << std::endl;
 
   VulcanTriReader reader(filename);
 
   int numVertex, numTriangles;
   reader.readHeader(numVertex, numTriangles);
 
-  std::cout << "vertex " << numVertex << " triangles " << numTriangles
+  std::cerr << "vertex " << numVertex << " triangles " << numTriangles
             << std::endl;
 
   double *vertices = new double[numVertex * 3];
   reader.readVertexBuffer(vertices, sizeof(double) * numVertex * 3);
 
+  std::cout << std::fixed << std::setprecision(3);
   for (size_t i = 0; i < numVertex; i++) {
-    std::cout << vertices[i * 3 + 0] << " " << vertices[i * 3 + 1] << " "
+    std::cout << vertices[i * 3 + 0] << " "
+              << vertices[i * 3 + 1] << " "
               << vertices[i * 3 + 2] << std::endl;
   }
 
