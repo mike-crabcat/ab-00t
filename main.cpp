@@ -2,12 +2,17 @@
 
 #include "VulcanTriReader.h"
 
-int main() {
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+      std::cout << "usage: " << argv[0] << " filename" << std::endl;
+      return 1;
+    }
 
-    std::cout << " hello world " << std::endl;
+    char *filename = argv[1];
 
-    //VulcanTriReader reader("/home/mike/Downloads/19183685.00t");
-    VulcanTriReader reader("/home/mike/Downloads/FY20Q1_FOR.00t");
+    std::cout << "opening " << filename << std::endl;
+
+    VulcanTriReader reader(filename);
 
     int numVertex, numTriangles;
     reader.readHeader(numVertex, numTriangles);
