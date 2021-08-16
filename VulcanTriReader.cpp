@@ -8,11 +8,8 @@
 #include "kaitai/kaitaistruct.h"
 
 VulcanTriReader::VulcanTriReader(const std::string path) {
-
-  mCurrentPageSize = 0;
-  mCurrentPageStart = 0;
-  mCurrentPageEnd = 0;
   mCurrentOffset = 0;
+  mCurrentPage = NULL;
 
   mFstream.open(path);
   if (!mFstream.is_open())
@@ -20,32 +17,28 @@ VulcanTriReader::VulcanTriReader(const std::string path) {
 
   mDataStream = std::make_shared<kaitai::kstream>(&mFstream);
   mDataStruct = std::make_shared<vulcan_00t_t>(mDataStream.get());
-}
 
-void VulcanTriReader::readHeader(int &numVertex, int &numTriangles) {
-  // Read sizes
+  // init
+  fetchPageIndex(0);
+
   seek(72);
-  read(&numVertex, 4);
-  numVertex = be32toh(numVertex);
+  read(&mNumVertices, 4);
+  mNumVertices = be32toh(mNumVertices);
+
   seek(96);
-  read(&numTriangles, 4);
-  numTriangles = be32toh(numTriangles);
+  read(&mNumTriangles, 4);
+  mNumTriangles = be32toh(mNumTriangles);
 }
 
-bool VulcanTriReader::readVertexBuffer(double *buffer, size_t bufferSize) {
-  int numVertex, numTriangles;
-  readHeader(numVertex, numTriangles);
-
+bool VulcanTriReader::readVerticesBuffer(double *buffer) {
   // Vertices start at this offset
   seek(72 + 24 + 24);
 
-  size_t readLength = sizeof(double) * 3 * numVertex;
-  if (readLength != bufferSize)
-    return false;
+  size_t readLength = sizeof(double) * 3 * mNumVertices;
 
   char tempBuffer[8];
   char *targetBuffer = (char *)buffer;
-  for (size_t i = 0; i < numVertex * 3; i++) {
+  for (size_t i = 0; i < mNumVertices * 3; i++) {
     read(tempBuffer, 8);
     // Flip buffer
     targetBuffer[i * 8 + 0] = tempBuffer[7];
@@ -57,31 +50,20 @@ bool VulcanTriReader::readVertexBuffer(double *buffer, size_t bufferSize) {
     targetBuffer[i * 8 + 6] = tempBuffer[1];
     targetBuffer[i * 8 + 7] = tempBuffer[0];
   }
-  // read(buffer, sizeof(double) * 3 * numVertex);
-
-  // //Fix endianness of buffer
-  // for(size_t i=0;i<3 * numVertex;i++) {
-  //     buffer[i] = (buffer[i]);
-  // }
 
   return true;
 }
 
-bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer, size_t bufferSize) {
-  int numVertex, numTriangles;
-  readHeader(numVertex, numTriangles);
-
-  size_t readLength = sizeof(uint32_t) * 3 * numTriangles;
-  if (readLength > bufferSize)
-    return false;
+bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer) {
+  size_t readLength = sizeof(uint32_t) * 3 * mNumTriangles;
 
   // Vertices start at this offset
-  seek(72 + 24 + 24 + 24 * numVertex);
+  seek(72 + 24 + 24 + 24 * mNumVertices);
 
   // Triangle index buffer is padded so that each triangle is 12 bytes of data
   // followed by 12 bytes of padding
   uint32_t tempBuffer[6];
-  for (size_t i = 0; i < numTriangles; i++) {
+  for (size_t i = 0; i < mNumTriangles; i++) {
     read(tempBuffer, sizeof(uint32_t) * 6);
     buffer[i * 3 + 0] = be32toh(tempBuffer[0]) - 1;
     buffer[i * 3 + 1] = be32toh(tempBuffer[1]) - 1;
@@ -91,54 +73,51 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer, size_t bufferSize) {
   return true;
 }
 
-void VulcanTriReader::seek(uint32_t offset) {
+void VulcanTriReader::fetchPageIndex(size_t pageIndex) {
+  ldiv_t l3Div = std::div((int64_t)pageIndex, (uint32_t)256);
+  ldiv_t l2Div = std::div((int64_t)l3Div.quot, (uint32_t)256);
+  ldiv_t l1Div = std::div((int64_t)l2Div.quot, (uint32_t)256);
+  ldiv_t l0Div = std::div((int64_t)l1Div.quot, (uint32_t)256);
+
+  if (l0Div.quot != 0)
+    throw std::runtime_error("Offset too big");
+
+  mCurrentPage = mDataStruct->root()
+                     ->children()
+                     ->at(l0Div.rem)
+                     ->children()
+                     ->at(l1Div.rem)
+                     ->children()
+                     ->at(l2Div.rem)
+                     ->children()
+                     ->at(l3Div.rem)
+                     ->page();
+
+  fastlz_decompress(mCurrentPage->compressed_data().c_str(),
+                    mCurrentPage->compressed_data_size(), mCurrentPageData,
+                    sizeof(mCurrentPageData));
+}
+
+void VulcanTriReader::seek(size_t offset) {
 
   // Within current page? just change current offset within page
-  if (offset >= mCurrentPageStart && offset < mCurrentPageEnd) {
+  if (offset >= mCurrentPage->page_start() &&
+      offset < mCurrentPage->page_end()) {
     mCurrentOffset = offset;
   }
   // Load new page based on offset
   else {
-    uint32_t pageIndex = offset / mDataStruct->compression_block_size();
-    ldiv_t l3Div = std::div((int64_t)pageIndex, (uint32_t)256);
-    ldiv_t l2Div = std::div((int64_t)l3Div.quot, (uint32_t)256);
-    ldiv_t l1Div = std::div((int64_t)l2Div.quot, (uint32_t)256);
-    ldiv_t l0Div = std::div((int64_t)l1Div.quot, (uint32_t)256);
-
-    if (l0Div.quot != 0)
-      throw std::runtime_error("Offset too big");
-
-    vulcan_00t_t::page_t *page = mDataStruct->root()
-                                     ->children()
-                                     ->at(l0Div.rem)
-                                     ->children()
-                                     ->at(l1Div.rem)
-                                     ->children()
-                                     ->at(l2Div.rem)
-                                     ->children()
-                                     ->at(l3Div.rem)
-                                     ->page();
-
-    // Decompress page into current page buffer
-    mCurrentPageSize = fastlz_decompress(
-        page->compressed_data().c_str(), page->compressed_data_size(),
-        mCurrentPageData, sizeof(mCurrentPageData));
-
-    // std::cout << "Page size " << mCurrentPageSize << " from "
-    //           << mDataStruct->compression_block_size() << std::endl;
-
+    size_t pageIndex = offset / mDataStruct->compression_block_size();
+    fetchPageIndex(pageIndex);
     mCurrentOffset = offset;
-    mCurrentPageStart = page->page_start();
-    mCurrentPageEnd = page->page_end();
-    mCurrentPageIndex = pageIndex;
   }
 }
 
 void VulcanTriReader::read(void *target, uint32_t length) {
   size_t targetOffset = 0;
   while (true) {
-    uint32_t a = mCurrentOffset - mCurrentPageStart;
-    uint32_t b = std::min(a + length, mCurrentPageEnd);
+    size_t a = mCurrentOffset - mCurrentPage->page_start();
+    size_t b = std::min<size_t>(a + length, mCurrentPage->page_end());
     std::memcpy((char *)target + targetOffset, &mCurrentPageData[a], b - a);
     targetOffset += b - a;
     length -= b - a;
