@@ -83,11 +83,9 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer, size_t bufferSize) {
   uint32_t tempBuffer[6];
   for (size_t i = 0; i < numTriangles; i++) {
     read(tempBuffer, sizeof(uint32_t) * 6);
-    buffer[i * 3 + 0] = be32toh(tempBuffer[0]);
-    buffer[i * 3 + 1] = be32toh(tempBuffer[1]);
-    buffer[i * 3 + 2] = be32toh(tempBuffer[2]);
-
-    assert(buffer[i * 3 + 0] != 0);
+    buffer[i * 3 + 0] = be32toh(tempBuffer[0]) - 1;
+    buffer[i * 3 + 1] = be32toh(tempBuffer[1]) - 1;
+    buffer[i * 3 + 2] = be32toh(tempBuffer[2]) - 1;
   }
 
   return true;
