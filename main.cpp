@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   int numVertex, numTriangles;
   reader.readHeader(numVertex, numTriangles);
 
-  std::cout << " vertex " << numVertex << " triangles " << numTriangles
+  std::cout << "vertex " << numVertex << " triangles " << numTriangles
             << std::endl;
 
   double *vertices = new double[numVertex * 3];

@@ -1,3 +1,4 @@
+#include <cassert>
 #include <cstring>
 #include <memory>
 
@@ -86,12 +87,7 @@ bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer, size_t bufferSize) {
     buffer[i * 3 + 1] = be32toh(tempBuffer[1]);
     buffer[i * 3 + 2] = be32toh(tempBuffer[2]);
 
-    std::cout << buffer[i * 3 + 0] << " " << buffer[i * 3 + 1] << " "
-              << buffer[i * 3 + 2] << std::endl;
-
-    if (buffer[i * 3 + 0] == 0) {
-      std::cout << "zeros!" << std::endl;
-    }
+    assert(buffer[i * 3 + 0] != 0);
   }
 
   return true;
@@ -129,7 +125,8 @@ void VulcanTriReader::seek(uint32_t offset) {
     mCurrentPageSize = fastlz_decompress(
         page->compressed_data().c_str(), page->compressed_data_size(),
         mCurrentPageData, sizeof(mCurrentPageData));
-    std::cout << " Page size " << mCurrentPageSize << " from "
+
+    std::cout << "Page size " << mCurrentPageSize << " from "
               << mDataStruct->compression_block_size() << std::endl;
 
     mCurrentOffset = offset;
