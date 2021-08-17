@@ -1,7 +1,7 @@
 #include "VulcanTriReader.h"
-#include "vulcan_tri_reader.h"
 
 extern "C" {
+#include "vulcan_tri_reader.h"
 
 void *MTK_Triangulation_Open(const char *filename) {
   return new VulcanTriReader(filename);
