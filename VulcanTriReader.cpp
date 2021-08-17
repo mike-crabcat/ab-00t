@@ -121,16 +121,22 @@ void VulcanTriReader::seek(size_t offset) {
 
 void VulcanTriReader::read(void *target, uint32_t length) {
   size_t targetOffset = 0;
+  char* targetChars = (char*) target;
+  
   while (true) {
+    if(mCurrentOffset < mCurrentPage->page_start() || mCurrentOffset > mCurrentPage->page_end())
+      {
+        throw std::runtime_error("wrong page");
+      }
     size_t a = mCurrentOffset - mCurrentPage->page_start();
     size_t b = std::min<size_t>(a + length, mCurrentPage->page_end());
-    std::memcpy((char *)target + targetOffset, &mCurrentPageData[a], b - a);
+    std::memcpy(&targetChars[targetOffset], &mCurrentPageData[a], b - a);
     targetOffset += b - a;
     length -= b - a;
     mCurrentOffset += b - a;
-    if (length > 0) {
+    if(mCurrentOffset >= mCurrentPage->page_end())
       seek(mCurrentOffset);
-    } else
-      break;
+    if (length == 0) break;
+      
   }
 }
