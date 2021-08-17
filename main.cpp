@@ -22,23 +22,16 @@ int main(int argc, char *argv[]) {
   std::cerr << "vertex " << numVertices << " triangles " << numTriangles
             << std::endl;
 
-  double *vertices = new double[numVertices * 3];
-  reader.readVerticesBuffer(vertices);
-
   std::cout << std::fixed << std::setprecision(3);
   for (size_t i = 0; i < numVertices; i++) {
-    std::cout << vertices[i * 3 + 0] << " " << vertices[i * 3 + 1] << " "
-              << vertices[i * 3 + 2] << std::endl;
+    std::cout << reader.vertices()[i * 3 + 0] << " "
+              << reader.vertices()[i * 3 + 1] << " "
+              << reader.vertices()[i * 3 + 2] << std::endl;
   }
-
-  uint32_t *triangles = new uint32_t[numTriangles * 3];
-  reader.readTriangleBuffer(triangles);
 
   for (size_t i = 0; i < numTriangles; i++) {
-    std::cout << triangles[i * 3 + 0] << " " << triangles[i * 3 + 1] << " "
-              << triangles[i * 3 + 2] << std::endl;
+    std::cout << reader.triangles()[i * 3 + 0] << " "
+              << reader.triangles()[i * 3 + 1] << " "
+              << reader.triangles()[i * 3 + 2] << std::endl;
   }
-
-  delete vertices;
-  delete triangles;
 }

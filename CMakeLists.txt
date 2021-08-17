@@ -27,8 +27,8 @@ list(APPEND src
   main.cpp
   vulcan_00t.cpp
   fastlz.cpp
-  VulcanTriReader.cpp)
-
+  VulcanTriReader.cpp
+  export.cpp)
 
 add_executable(tester ${src})
 

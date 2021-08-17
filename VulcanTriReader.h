@@ -9,16 +9,24 @@ class VulcanTriReader {
 public:
   VulcanTriReader(const std::string path);
 
-  bool readVerticesBuffer(double *buffer);
-  bool readTriangleBuffer(uint32_t *buffer);
-
   int numVertices() const { return mNumVertices; };
   int numTriangles() const { return mNumTriangles; };
+
+  std::vector<double> const& vertices() const {
+    return mVertices;
+  }
+
+  std::vector<int> const& triangles() const {
+    return mTriangles;
+  }
 
 private:
   void fetchPageIndex(size_t pageIndex);
   void seek(size_t offset);
   void read(void *target, uint32_t length);
+
+  std::vector<double> readVerticesBuffer();
+  std::vector<int> readTriangleBuffer();
 
   std::ifstream mFstream;
   std::shared_ptr<kaitai::kstream> mDataStream;
@@ -26,6 +34,9 @@ private:
 
   size_t mNumVertices;
   size_t mNumTriangles;
+
+  std::vector<double> mVertices;
+  std::vector<int> mTriangles;
 
   size_t mCurrentOffset;
   vulcan_00t_t::page_t *mCurrentPage;

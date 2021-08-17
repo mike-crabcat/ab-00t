@@ -28,18 +28,23 @@ VulcanTriReader::VulcanTriReader(const std::string path) {
   seek(96);
   read(&mNumTriangles, 4);
   mNumTriangles = be32toh(mNumTriangles);
+
+  mVertices = readVerticesBuffer();
+  mTriangles = readTriangleBuffer();
 }
 
-bool VulcanTriReader::readVerticesBuffer(double *buffer) {
+std::vector<double> VulcanTriReader::readVerticesBuffer() {
+  std::vector<double> vertices(3 * mNumVertices);
+
   // Vertices start at this offset
   seek(72 + 24 + 24);
 
-  size_t readLength = sizeof(double) * 3 * mNumVertices;
-
   char tempBuffer[8];
-  char *targetBuffer = (char *)buffer;
+  char *targetBuffer = (char *) vertices.data();
+
   for (size_t i = 0; i < mNumVertices * 3; i++) {
     read(tempBuffer, 8);
+
     // Flip buffer
     targetBuffer[i * 8 + 0] = tempBuffer[7];
     targetBuffer[i * 8 + 1] = tempBuffer[6];
@@ -51,26 +56,27 @@ bool VulcanTriReader::readVerticesBuffer(double *buffer) {
     targetBuffer[i * 8 + 7] = tempBuffer[0];
   }
 
-  return true;
+  return vertices;
 }
 
-bool VulcanTriReader::readTriangleBuffer(uint32_t *buffer) {
-  size_t readLength = sizeof(uint32_t) * 3 * mNumTriangles;
+std::vector<int> VulcanTriReader::readTriangleBuffer() {
+  std::vector<int> triangles(3 * mNumTriangles);
 
-  // Vertices start at this offset
+  // Triangles start at this offset
   seek(72 + 24 + 24 + 24 * mNumVertices);
 
-  // Triangle index buffer is padded so that each triangle is 12 bytes of data
-  // followed by 12 bytes of padding
+  // Triangle index buffer is padded so that each triangle is 12 bytes of
+  // data followed by 12 bytes of padding
   uint32_t tempBuffer[6];
   for (size_t i = 0; i < mNumTriangles; i++) {
     read(tempBuffer, sizeof(uint32_t) * 6);
-    buffer[i * 3 + 0] = be32toh(tempBuffer[0]) - 1;
-    buffer[i * 3 + 1] = be32toh(tempBuffer[1]) - 1;
-    buffer[i * 3 + 2] = be32toh(tempBuffer[2]) - 1;
+
+    triangles[i * 3 + 0] = be32toh(tempBuffer[0]) - 1;
+    triangles[i * 3 + 1] = be32toh(tempBuffer[1]) - 1;
+    triangles[i * 3 + 2] = be32toh(tempBuffer[2]) - 1;
   }
 
-  return true;
+  return triangles;
 }
 
 void VulcanTriReader::fetchPageIndex(size_t pageIndex) {
